@@ -1,5 +1,5 @@
-from hackday.models import Event, Script, Thread, Post, Log
 from django.contrib import admin
+from hackday.models import Event, Script, Thread, Post, Log
 
 admin.site.register(Event)
 admin.site.register(Script)

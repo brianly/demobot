@@ -1,13 +1,13 @@
 from celery import task
 from time import sleep
-from hackday.models import Script, Post, Thread, Log
+from hackday.models import Post, Thread, Log
 import requests
-import sys
 
 try:
     import json
 except ImportError:
     import simplejson as json
+
 
 def _oauth_header(token):
     return {"Authorization": "Bearer %s" % token}
@@ -127,12 +127,3 @@ def start(event_name):
                 post_reply(reply, t.group_id, tsi)
 
     return len(threads_to_post_as_class)
-
-
-
-
-
-#@task()
-#def add(x, y):
-#    # sleep(400)
-#    return x + y
