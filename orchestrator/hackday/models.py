@@ -44,28 +44,8 @@ class Event(models.Model):
 def event_post_save(sender, instance, signal, *args, **kwargs):
     """Starts a Task when an Event is created"""
     from hackday.tasks import add, start
-    from celery import group
-#
-#
-#    print 'dfdf ' + instance.name
-#    print
-#    print
-#
-#    t_name = 'pf-thread01'
-#    posts = Post.objects.filter(thread__name=t_name).all()
-#
-#    for p in posts:
-##        print dir(t)
-#        print p.thread.name
-#        print p.name
-
-
-#    c = len(threads.objects)
-#    c = posts.count()
-#    info = 'Object count: %s' % (c)
 
     print 'Received "%s" for processing' % (instance.name)
-
     start.delay(instance.name)
 
 # Wire up the post_save handler for Events
@@ -73,6 +53,8 @@ models.signals.post_save.connect(event_post_save, sender=Event)
 
 
 
+class Log(models.Model):
+    message_id = models.CharField(max_length=50)
 
 
 
