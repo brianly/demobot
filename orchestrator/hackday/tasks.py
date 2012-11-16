@@ -1,16 +1,31 @@
-from celery import task
-from time import sleep
-from hackday.models import Post, Thread, Log
+import sys
 import requests
-
 try:
     import json
 except ImportError:
     import simplejson as json
+from celery import task
+from time import sleep
+from hackday.models import Post, Thread, Log
 
 
 def _oauth_header(token):
+    """Generate an authorization header for Requests"""
     return {"Authorization": "Bearer %s" % token}
+
+def http_post(url, token, payload, debug=False):
+    """Make a POST request to Yammer"""
+    config = {}
+
+    if debug is True:
+        config = {'verbose': sys.stderr}
+
+    return requests.post(url, headers=_oauth_header(token), params=payload, config=config)
+
+def debug(message_id):
+    log1 = Log()
+    log1.message_id = message_id
+    log1.save()
 
 def post_thread_starter(post, group_id):
     base_url = 'https://www.yammer.com/api/v1/'
@@ -21,16 +36,13 @@ def post_thread_starter(post, group_id):
     payload = {'body': post.content, 'group_id': group_id}
 
     # Post the thread starter
-    r = requests.post(url, headers=_oauth_header(post.token), params=payload, config=config)
+    r = http_post(url, post.token, payload)
     resp = r.json
 
     # Get the fucking thread starter
     refs = resp['references'][0]
     tsi = refs['thread_starter_id']
-
-    log1 = Log()
-    log1.message_id = tsi
-    log1.save()
+    debug(tsi)
 
     sleep(post.delay)
 
@@ -45,22 +57,18 @@ def post_reply(post, group_id, reply_to_id):
     payload = {'body': post.content, 'group_id': group_id, 'replied_to_id': reply_to_id}
 
     # Post the thread starter
-    r = requests.post(url, headers=_oauth_header(post.token), params=payload, config=config)
-
+    r = http_post(url, post.token, payload)
 
     resp = r.json
     msgd = resp['messages'][0]
     pid = msgd['id']
-    log2 = Log()
-    log2.message_id = pid
-    log2.save()
+    debug(pid)
 
     sleep(post.delay)
 
-    pass
 
 class ThreadContainer(object):
-
+    """"Holds the thread starter and replies"""
     def __init__(self, name, group_id):
         self.name = name
         self.group_id = group_id
