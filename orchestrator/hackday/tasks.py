@@ -13,12 +13,14 @@ def _oauth_header(token):
     """Generate an authorization header for Requests"""
     return {"Authorization": "Bearer %s" % token}
 
-def http_post(url, token, payload, debug=False):
+def http_post(url, token, payload, delay, debug=False):
     """Make a POST request to Yammer"""
     config = {}
 
     if debug is True:
         config = {'verbose': sys.stderr}
+
+    sleep(delay)
 
     return requests.post(url, headers=_oauth_header(token), params=payload, config=config)
 
@@ -28,6 +30,7 @@ def debug(message_id):
     log1.save()
 
 def post_thread_starter(post, group_id):
+    """Starts a thread and returns the ID for replies"""
     base_url = 'https://www.yammer.com/api/v1/'
     config = {}#{'verbose': sys.stderr}
     endpoint = 'messages'
@@ -36,7 +39,7 @@ def post_thread_starter(post, group_id):
     payload = {'body': post.content, 'group_id': group_id}
 
     # Post the thread starter
-    r = http_post(url, post.token, payload)
+    r = http_post(url, post.token, payload, post.delay)
     resp = r.json
 
     # Get the fucking thread starter
@@ -44,11 +47,10 @@ def post_thread_starter(post, group_id):
     tsi = refs['thread_starter_id']
     debug(tsi)
 
-    sleep(post.delay)
-
     return tsi
 
 def post_reply(post, group_id, reply_to_id):
+    """Posts a reply to a thread starter"""
     base_url = 'https://www.yammer.com/api/v1/'
     config = {} # {'verbose': sys.stderr}
     endpoint = 'messages'
@@ -57,14 +59,12 @@ def post_reply(post, group_id, reply_to_id):
     payload = {'body': post.content, 'group_id': group_id, 'replied_to_id': reply_to_id}
 
     # Post the thread starter
-    r = http_post(url, post.token, payload)
+    r = http_post(url, post.token, payload, post.delay)
 
     resp = r.json
     msgd = resp['messages'][0]
     pid = msgd['id']
     debug(pid)
-
-    sleep(post.delay)
 
 
 class ThreadContainer(object):
@@ -91,6 +91,10 @@ class ThreadContainer(object):
 
 
 def build_posts2(thread):
+    """
+    Gets a list of posts with the thread starter at the top.
+    WARNING: it is possible for there to be more than one thread starter
+    """
     ordered_posts = []
 
     posts = Post.objects.filter(thread__name=thread.name).all().order_by('-is_starter')
