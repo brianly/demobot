@@ -43,7 +43,7 @@ class Event(models.Model):
 
 def event_post_save(sender, instance, signal, *args, **kwargs):
     """Starts a Task when an Event is created"""
-    from hackday.tasks import add, start
+    from hackday.tasks import start
 
     print 'Received "%s" for processing' % (instance.name)
     start.delay(instance.name)
